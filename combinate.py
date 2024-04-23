@@ -6,13 +6,12 @@ import math
 import mediapipe as mp
 import winsound  
 
-#all code developed by Minho Choi 
-
 mp_face_mesh = mp.solutions.face_mesh
 mp_drawing = mp.solutions.drawing_utils
 
 scroll_speed = 5
 scroll_threshold = 0.05  
+
 baseline_length = None
 baseline_error = 23
 baseline_set = False
@@ -20,45 +19,41 @@ baseline_set = False
 prev_face_center = None
 prev_face_angle = 0
 
-# 초기에 코의 수평선을 그리기 위한 변수
 initial_nose_y = None
 initial_baseline_length = None
 initial_baseline_set = False
 
-# Define the keyboard layout globally
+pyautogui.FAILSAFE = False
+
 keyboard = [
     ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
     ["A", "S", "D", "F", "G", "H", "J", "K", "L", ";"],
     ["Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"]
 ]
 
-# 키보드 화면을 표시하는지 여부를 나타내는 변수
 keyboard_displayed = False
 
-# 키보드 자판을 그리는 함수
 def draw_keyboard(img, show=True):
     if show:
         key_width = 40
         key_height = 40
         key_padding = 10
+
         start_x = 80
         start_y = 300
-        
+
         for row_index, row in enumerate(keyboard):
             for col_index, key in enumerate(row):
                 key_x = start_x + col_index * (key_width + key_padding)
                 key_y = start_y + row_index * (key_height + key_padding)
-                
-                # Draw key rectangle
+
                 cv2.rectangle(img, (key_x, key_y), (key_x + key_width, key_y + key_height), (255, 255, 255), 1)
-                
-                # Draw key label
                 cv2.putText(img, key, (key_x + 10, key_y + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
-                
-                # Draw blue dot in the center of each key
                 center_x = key_x + key_width // 2
                 center_y = key_y + key_height // 2
                 cv2.circle(img, (center_x, center_y), 3, (255, 0, 0), cv2.FILLED)
+        
+        cv2.imshow("Hand Tracking", img)
     else:
         pass
 
@@ -77,7 +72,7 @@ class HandDetector:
         self.hands = self.mpHands.Hands(self.mode, self.maxHands, self.modelComplex, self.detectionCon, self.trackCon)
         self.mpDraw = mp.solutions.drawing_utils
         self.tipIds = [4, 8, 12, 16, 20]
- 
+    
     def findHands(self, img, draw=True):
         rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.results = self.hands.process(rgb_img)
@@ -120,17 +115,34 @@ class HandDetector:
     def fingersUp(self):
         fingers = []
         for id in range(1, 5):
-            if self.lmList[self.tipIds[id]][2] < self.lmList[self.tipIds[id] - 2][2]:
+            if self.tipIds[id] < len(self.lmList) and self.lmList[self.tipIds[id]][2] < self.lmList[self.tipIds[id] - 2][2]:
                 fingers.append(1)
             else:
                 fingers.append(0)
- 
+                
         return fingers
+
+    
+    def findDistance(self, p1, p2, img, draw=True):
+        x1, y1 = self.lmList[p1][1:]
+        x2, y2 = self.lmList[p2][1:]
+        cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+ 
+        if draw:
+            cv2.line(img, (x1, y1), (x2, y2), (0, 255, 255), 3)
+            cv2.circle(img, (x1, y1), 6, (0, 255, 255), cv2.FILLED)
+            cv2.circle(img, (x2, y2), 6, (0, 255, 255), cv2.FILLED)
+            cv2.circle(img, (cx, cy), 6, (0, 255, 255), cv2.FILLED)
+ 
+        length = math.hypot(x2 - x1, y2 - y1)
+ 
+        return length, img, [x1, y1, x2, y2, cx, cy]
  
     def findAngle(self, p1, p2, p3, img, draw=True):
         x1, y1 = self.lmList[p1][1:]
         x2, y2 = self.lmList[p2][1:]
         x3, y3 = self.lmList[p3][1:]
+ 
         angle = math.degrees(math.atan2(y3 - y2, x3 - x2) - math.atan2(y1 - y2, x1 - x2))
         if angle < 0:
             angle += 360
@@ -138,17 +150,24 @@ class HandDetector:
         if draw:
             cv2.line(img, (x1, y1), (x2, y2), (255, 255, 255), 3)
             cv2.line(img, (x3, y3), (x2, y2), (255, 255, 255), 3)
-            cv2.circle(img, (x1, y1), 15, (0, 0, 255), cv2.FILLED)
-            cv2.circle(img, (x2, y2), 15, (0, 0, 255), cv2.FILLED)
-            cv2.circle(img, (x3, y3), 15, (0, 0, 255), cv2.FILLED)
+            cv2.circle(img, (x1, y1), 6, (0, 0, 255), cv2.FILLED)
+            cv2.circle(img, (x1, y1), 10, (0, 0, 255), 2)
+            cv2.circle(img, (x2, y2), 6, (0, 0, 255), cv2.FILLED)
+            cv2.circle(img, (x2, y2), 10, (0, 0, 255), 2)
+            cv2.circle(img, (x3, y3), 6, (0, 0, 255), cv2.FILLED)
+            cv2.circle(img, (x3, y3), 10, (0, 0, 255), 2)
+            cv2.putText(img, str(int(angle)), (x2 - 50, y2 + 50), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
  
         return angle
 
 def calculate_distance(point1, point2):
-    return int(math.sqrt((point2[0] - point1[0]) ** 2 + (point2[1] - point1[1]) ** 2))
+    x1, y1 = point1
+    x2, y2 = point2
+    distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    return distance
 
 def display_length(img, length, position):
-    cv2.putText(img, f"Length: {length}", position, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+    cv2.putText(img, f"Length: {int(length)}", position, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
 
 def calculate_camera_hand_distance(lmList):
     if len(lmList) > 0:
@@ -170,28 +189,99 @@ def calculate_camera_hand_distance(lmList):
         bbox_height = y_max - y_min
 
         distance = 100 / max(bbox_width, bbox_height)  # 거리 100 최대로.
-
-        return distance
+        
+        if distance < move_threshold:
+            return True
+        else:
+            return False
     else:
         return None
 
 move_threshold = 10
 
-wCam, hCam = 640, 480
 cap = cv2.VideoCapture(0)
-cap.set(3, wCam)
-cap.set(4, hCam)
-
-detector = HandDetector()
-
-# "Hand Tracking" 창 생성
+detector = HandDetector(detectionCon=0.75)
+face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1, min_detection_confidence=0.5)
 cv2.namedWindow("Hand Tracking")
 
 while True:
     success, img = cap.read()
+
+    if success:
+        rgb_frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        results = face_mesh.process(rgb_frame)
+
+
+    if results.multi_face_landmarks:
+        for face_landmarks in results.multi_face_landmarks:
+            nose_landmark = face_landmarks.landmark[5]
+            nose_x = int(nose_landmark.x * img.shape[1])
+            nose_y = int(nose_landmark.y * img.shape[0])
+
+            if not initial_baseline_set:
+                initial_nose_y = nose_y
+                initial_baseline_length = nose_y
+                initial_baseline_set = True
+
+            nose_error = abs(nose_y - initial_baseline_length)
+
+            if nose_error > baseline_error:
+                initial_baseline_length = nose_y
+
+            cv2.line(img, (0, initial_baseline_length), (img.shape[1], initial_baseline_length), (255, 0, 0), 2)
+            x_min, y_min, x_max, y_max = float('inf'), float('inf'), float('-inf'), float('-inf')
+            for landmark in face_landmarks.landmark:
+                x, y = landmark.x * img.shape[1], landmark.y * img.shape[0]
+                x_min = min(x_min, x)
+                y_min = min(y_min, y)
+                x_max = max(x_max, x)
+                y_max = max(y_max, y)
+                face_center = ((x_min + x_max) / 2, (y_min + y_max) / 2)
+                
+                face_angle = math.degrees(math.atan2(y_max - y_min, x_max - x_min))
+                
+                if prev_face_center is not None:
+                    nose_movement = nose_y - initial_baseline_length
+                    
+                    # 스크롤 제어
+                    if nose_movement > 0:
+                        pyautogui.scroll(-scroll_speed)  
+                    elif nose_movement < 0:
+                        pyautogui.scroll(scroll_speed) 
+                
+                prev_face_center = face_center
+                prev_face_angle = face_angle
+                
+                # 얼굴 전체를 인식하는 초록색 박스 그리기
+                green_color = (0, 255, 0)  # 초록색
+                cv2.rectangle(img, (int(x_min), int(y_min)), (int(x_max), int(y_max)), green_color, 2)
+
+                # 얼굴의 중심 좌표인 코의 x 좌표를 기준으로 얼굴을 왼쪽과 오른쪽으로 나누기
+                nose_x = int(face_landmarks.landmark[5].x * img.shape[1])
+                face_width = x_max - x_min
+                box_width = int(face_width / 4)  # 얼굴의 절반 크기로 설정
+                left_face_box = (int(nose_x - box_width), int(y_min), int(nose_x), int(y_max))
+                right_face_box = (int(nose_x), int(y_min), int(nose_x + box_width), int(y_max))
+
+                # 얼굴의 왼쪽 볼을 빨간색 원형으로 표시
+                left_cheek_color = (0, 0, 255)  # 빨간색
+                left_cheek_center = ((x_min + nose_x) // 2, (y_min + y_max) // 2)
+                left_cheek_radius = max((nose_x - x_min) // 2, (y_max - y_min) // 2, 0)
+                cv2.circle(img, (int(left_cheek_center[0]), int(left_cheek_center[1])), max(int(left_cheek_radius), 1), left_cheek_color, 1)
+
+
+                # 얼굴의 오른쪽 볼을 파란색 원형으로 표시
+                right_cheek_color = (255, 0, 0)  # 파란색
+                right_cheek_center = ((x_max + nose_x) // 2, (y_min + y_max) // 2)
+                right_cheek_radius = max((x_max - nose_x) // 2, (y_max - y_min) // 2, 0)
+                cv2.circle(img, (int(right_cheek_center[0]), int(right_cheek_center[1])), max(int(right_cheek_radius), 1), right_cheek_color, 1)
+                
+
+    # 손 트래킹
     img = detector.findHands(img)
     lmList, bbox = detector.findPosition(img)
- 
+    fingers = detector.fingersUp()
+
     if lmList:
         for landmark in lmList:
             id, x, y = landmark
@@ -219,7 +309,7 @@ while True:
         index_tip_point = (lmList[8][1], lmList[8][2])
         middle_finger_tip = (lmList[12][1], lmList[12][2])
         cv2.line(img, index_tip_point, middle_finger_tip, (255, 0, 0), 2)
-        index_middle_distance = calculate_distance(index_tip_point, middle_finger_tip)
+        index_middle_distance = calculate_distance(index_tip_point, middle_finger_tip)    
         display_length(img, index_middle_distance, (middle_finger_tip[0] + 10, middle_finger_tip[1] + 10))
         
         # 만약 8번과 12번 랜드마크 사이의 거리가 17-20 내에 있다면 왼쪽 클릭으로 작동
@@ -278,9 +368,6 @@ while True:
         else:
             message = ""
 
-        # 코 위치 표시
-        cv2.circle(img, (50, 50), 5, (0, 255, 255), cv2.FILLED)
-        cv2.putText(img, "Nose", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
 
         # 키보드 위치 표시
         draw_keyboard(img)
@@ -292,7 +379,7 @@ while True:
 
         # 거리 메시지 출력
         cv2.putText(
-            img,
+            img,      
             message,
             (50, 100),
             cv2.FONT_HERSHEY_SIMPLEX,
@@ -300,106 +387,23 @@ while True:
             color,
             2,
         )
-        with mp_face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence=0.5) as face_mesh:
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-        
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        results = face_mesh.process(rgb_frame)
-        
-        if results.multi_face_landmarks:
-            for face_landmarks in results.multi_face_landmarks:
-                nose_landmark = face_landmarks.landmark[5]
-                nose_x = int(nose_landmark.x * frame.shape[1])
-                nose_y = int(nose_landmark.y * frame.shape[0])
-                
-                # 초기 코의 위치 저장
-                if not initial_baseline_set:
-                    initial_nose_y = nose_y
-                    initial_baseline_length = nose_y
-                    initial_baseline_set = True
-                
-                nose_error = abs(nose_y - initial_baseline_length)
-                
-                # 코의 위치가 일정 범위를 벗어나면 초기 위치를 다시 설정
-                if nose_error > baseline_error:
-                    initial_baseline_length = nose_y
-                
-                # 초기 코의 위치를 기준으로 수평선 그리기
-                cv2.line(frame, (0, initial_baseline_length), (frame.shape[1], initial_baseline_length), (255, 0, 0), 2)
 
-                x_min, y_min, x_max, y_max = float('inf'), float('inf'), float('-inf'), float('-inf')
-                for landmark in face_landmarks.landmark:
-                    x, y = landmark.x * frame.shape[1], landmark.y * frame.shape[0]
-                    x_min = min(x_min, x)
-                    y_min = min(y_min, y)
-                    x_max = max(x_max, x)
-                    y_max = max(y_max, y)
-                face_center = ((x_min + x_max) / 2, (y_min + y_max) / 2)
-                
-                face_angle = math.degrees(math.atan2(y_max - y_min, x_max - x_min))
-                
-                if prev_face_center is not None:
-                    nose_movement = nose_y - initial_baseline_length
-                    
-                    # 스크롤 제어
-                    if nose_movement > 0:
-                        pyautogui.scroll(-scroll_speed)  
-                    elif nose_movement < 0:
-                        pyautogui.scroll(scroll_speed) 
-                
-                prev_face_center = face_center
-                prev_face_angle = face_angle
-                
-                # 얼굴 전체를 인식하는 초록색 박스 그리기
-                green_color = (0, 255, 0)  # 초록색
-                cv2.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), green_color, 2)
-
-                # 얼굴의 중심 좌표인 코의 x 좌표를 기준으로 얼굴을 왼쪽과 오른쪽으로 나누기
-                nose_x = int(face_landmarks.landmark[5].x * frame.shape[1])
-                face_width = x_max - x_min
-                box_width = int(face_width / 4)  # 얼굴의 절반 크기로 설정
-                left_face_box = (int(nose_x - box_width), int(y_min), int(nose_x), int(y_max))
-                right_face_box = (int(nose_x), int(y_min), int(nose_x + box_width), int(y_max))
-
-                # 얼굴의 왼쪽 볼을 빨간색 원형으로 표시
-                left_cheek_color = (0, 0, 255)  # 빨간색
-                left_cheek_center = ((x_min + nose_x) // 2, (y_min + y_max) // 2)
-                left_cheek_radius = min((nose_x - x_min) // 2, (y_max - y_min) // 2)
-                cv2.circle(frame, (int(left_cheek_center[0]), int(left_cheek_center[1])), int(left_cheek_radius), left_cheek_color, 2)
-
-                # 얼굴의 오른쪽 볼을 파란색 원형으로 표시
-                right_cheek_color = (255, 0, 0)  # 파란색
-                right_cheek_center = ((nose_x + x_max) // 2, (y_min + y_max) // 2)
-                right_cheek_radius = min((x_max - nose_x) // 2, (y_max - y_min) // 2)
-                cv2.circle(frame, (int(right_cheek_center[0]), int(right_cheek_center[1])), int(right_cheek_radius), right_cheek_color, 2)
-
-                # 원형 방향 표시
-                left_cheek_direction = math.atan2((left_cheek_center[1] - prev_face_center[1]), (prev_face_center[0] - left_cheek_center[0]))
-                right_cheek_direction = math.atan2((right_cheek_center[1] - prev_face_center[1]), (right_cheek_center[0] - prev_face_center[0]))
-                
-                # 원형 방향에 따라 방향 표시선을 그립니다.
-                cv2.line(frame, left_cheek_center, (int(left_cheek_center[0] + left_cheek_radius * math.cos(left_cheek_direction)), int(left_cheek_center[1] - left_cheek_radius * math.sin(left_cheek_direction))), (0, 255, 255), 2)
-                cv2.line(frame, right_cheek_center, (int(right_cheek_center[0] + right_cheek_radius * math.cos(right_cheek_direction)), int(right_cheek_center[1] - right_cheek_radius * math.sin(right_cheek_direction))), (0, 255, 255), 2)
-
-                # 두 볼 사이의 거리를 계산하여 벌어짐 감지
-                cheek_distance = calculate_distance(left_cheek_center, right_cheek_center)
-                if baseline_length is None:
-                    baseline_length = cheek_distance
-
-                # 초기 코의 위치와 두 볼 사이의 거리를 비교하여 벌어짐 감지
-                if baseline_length is not None:
-                    if cheek_distance > baseline_length + scroll_threshold:  
-                        pyautogui.scroll(-scroll_speed)  # 스크롤 아래로
-                    elif cheek_distance < baseline_length - scroll_threshold:  
-                        pyautogui.scroll(scroll_speed)  # 스크롤 위로
-            prev_cheek_distance = cheek_distance
     cv2.imshow("Hand Tracking", img)
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
+    
+    # 마우스 이벤트 처리
+    def click_event(event, x, y, flags, param):
+        global keyboard_displayed
+        if event == cv2.EVENT_LBUTTONDOWN:
+            # x, y 좌표를 확인하여 키보드가 입력창 또는 검색창에 클릭한 것으로 간주
+            if 80 <= x <= 520 and 300 <= y <= 420:
+                keyboard_displayed = True
+                draw_keyboard(img, show=True)
+            else:
+                keyboard_displayed = False
+                draw_keyboard(img, show=False)
 
-cap.release()
-cv2.destroyAllWindows()
+    cv2.setMouseCallback("Hand Tracking", click_event)
+    
+
+    cap.release()
+    cv2.destroyAllWindows()

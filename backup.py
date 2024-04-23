@@ -4,7 +4,7 @@ import pyautogui
 import time
 import math
 import mediapipe as mp
-#import winsound  
+import winsound  
 
 # Define the keyboard layout globally
 keyboard = [
@@ -204,7 +204,7 @@ while True:
         index_tip_point = (lmList[8][1], lmList[8][2])
         middle_finger_tip = (lmList[12][1], lmList[12][2])
         cv2.line(img, index_tip_point, middle_finger_tip, (255, 0, 0), 2)
-        index_middle_distance = calculate_distance(index_tip_point, middle_finger_tip)
+        index_middle_distance = calculate_distance(index_tip_point, middle_finger_tip)    
         display_length(img, index_middle_distance, (middle_finger_tip[0] + 10, middle_finger_tip[1] + 10))
         
         # 만약 8번과 12번 랜드마크 사이의 거리가 17-20 내에 있다면 왼쪽 클릭으로 작동

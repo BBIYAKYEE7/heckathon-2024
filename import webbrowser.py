@@ -4,7 +4,7 @@ import pyautogui
 import time
 import math
 import mediapipe as mp
-#import winsound  
+import winsound  
 
 # Define the keyboard layout globally
 keyboard = [
@@ -46,7 +46,7 @@ def draw_keyboard(img, show=True):
         cv2.imshow("Hand Tracking", img)
     else:
         pass
-
+  
 class HandDetector:
     def __init__(self, mode=False, maxHands=2, modelComplexity=1, detectionCon=0.5, trackCon=0.5):
         self.lmList = []
@@ -111,6 +111,21 @@ class HandDetector:
                 fingers.append(0)
  
         return fingers
+    
+    def findDistance(self, p1, p2, img, draw=True):
+        x1, y1 = self.lmList[p1][1:]
+        x2, y2 = self.lmList[p2][1:]
+        cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+ 
+        if draw:
+            cv2.line(img, (x1, y1), (x2, y2), (0, 255, 255), 3)
+            cv2.circle(img, (x1, y1), 6, (0, 255, 255), cv2.FILLED)
+            cv2.circle(img, (x2, y2), 6, (0, 255, 255), cv2.FILLED)
+            cv2.circle(img, (cx, cy), 6, (0, 255, 255), cv2.FILLED)
+ 
+        length = math.hypot(x2 - x1, y2 - y1)
+ 
+        return length, img, [x1, y1, x2, y2, cx, cy]
  
     def findAngle(self, p1, p2, p3, img, draw=True):
         x1, y1 = self.lmList[p1][1:]
@@ -162,7 +177,7 @@ def calculate_camera_hand_distance(lmList):
 
 move_threshold = 10
 
-wCam, hCam = 640, 480
+wCam, hCam = 1920, 1080
 cap = cv2.VideoCapture(0)
 cap.set(3, wCam)
 cap.set(4, hCam)
@@ -171,7 +186,7 @@ detector = HandDetector()
 
 # "Hand Tracking" 창 생성
 cv2.namedWindow("Hand Tracking")
-
+    
 while True:
     success, img = cap.read()
     img = detector.findHands(img)
@@ -204,7 +219,7 @@ while True:
         index_tip_point = (lmList[8][1], lmList[8][2])
         middle_finger_tip = (lmList[12][1], lmList[12][2])
         cv2.line(img, index_tip_point, middle_finger_tip, (255, 0, 0), 2)
-        index_middle_distance = calculate_distance(index_tip_point, middle_finger_tip)
+        index_middle_distance = calculate_distance(index_tip_point, middle_finger_tip)    
         display_length(img, index_middle_distance, (middle_finger_tip[0] + 10, middle_finger_tip[1] + 10))
         
         # 만약 8번과 12번 랜드마크 사이의 거리가 17-20 내에 있다면 왼쪽 클릭으로 작동
@@ -263,9 +278,6 @@ while True:
         else:
             message = ""
 
-        # 코 위치 표시
-        cv2.circle(img, (50, 50), 5, (0, 255, 255), cv2.FILLED)
-        cv2.putText(img, "Nose", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
 
         # 키보드 위치 표시
         draw_keyboard(img)
@@ -277,7 +289,7 @@ while True:
 
         # 거리 메시지 출력
         cv2.putText(
-            img,
+            img,      
             message,
             (50, 100),
             cv2.FONT_HERSHEY_SIMPLEX,

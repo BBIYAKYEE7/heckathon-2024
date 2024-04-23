@@ -4,48 +4,7 @@ import pyautogui
 import time
 import math
 import mediapipe as mp
-#import winsound  
-
-# Define the keyboard layout globally
-keyboard = [
-    ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
-    ["A", "S", "D", "F", "G", "H", "J", "K", "L", ";"],
-    ["Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"]
-]
-
-# 키보드 화면을 표시하는지 여부를 나타내는 변수
-keyboard_displayed = False
-
-# 키보드 자판을 그리는 함수
-def draw_keyboard(img, show=True):
-    if show:
-        key_width = 40
-        key_height = 40
-        key_padding = 10
-
-        start_x = 80
-        start_y = 300
-
-        for row_index, row in enumerate(keyboard):
-            for col_index, key in enumerate(row):
-                key_x = start_x + col_index * (key_width + key_padding)
-                key_y = start_y + row_index * (key_height + key_padding)
-
-                # Draw key rectangle
-                cv2.rectangle(img, (key_x, key_y), (key_x + key_width, key_y + key_height), (255, 255, 255), 1)
-
-                # Draw key label
-                cv2.putText(img, key, (key_x + 10, key_y + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
-
-                # Draw blue dot in the center of each key
-                center_x = key_x + key_width // 2
-                center_y = key_y + key_height // 2
-                cv2.circle(img, (center_x, center_y), 3, (255, 0, 0), cv2.FILLED)
-        
-        # 키보드 화면을 업데이트하여 보여줌
-        cv2.imshow("Hand Tracking", img)
-    else:
-        pass
+import winsound  
 
 class HandDetector:
     def __init__(self, mode=False, maxHands=2, modelComplexity=1, detectionCon=0.5, trackCon=0.5):
@@ -154,7 +113,7 @@ def calculate_camera_hand_distance(lmList):
         bbox_width = x_max - x_min
         bbox_height = y_max - y_min
 
-        distance = 100 / max(bbox_width, bbox_height)  # 거리 100 최대로.
+        distance = 100 / max(bbox_width, bbox_height)  #거리 100 최대로.
 
         return distance
     else:
@@ -168,9 +127,6 @@ cap.set(3, wCam)
 cap.set(4, hCam)
 
 detector = HandDetector()
-
-# "Hand Tracking" 창 생성
-cv2.namedWindow("Hand Tracking")
 
 while True:
     success, img = cap.read()
@@ -200,6 +156,7 @@ while True:
         pinky_wrist_length = calculate_distance(pinky_tip_point, wrist_point)
         display_length(img, pinky_wrist_length, (pinky_tip_point[0] + 10, pinky_tip_point[1] + 10))
         
+        
         # 8과 12 점을 연결하고 파란색으로 표시
         index_tip_point = (lmList[8][1], lmList[8][2])
         middle_finger_tip = (lmList[12][1], lmList[12][2])
@@ -210,7 +167,6 @@ while True:
         # 만약 8번과 12번 랜드마크 사이의 거리가 17-20 내에 있다면 왼쪽 클릭으로 작동
         if 17 <= index_middle_distance <= 45:
             pyautogui.click(button='left')
-            
 
         # 16과 12 점을 연결하고 파란색으로 표시
         index_finger_joint = (lmList[16][1], lmList[16][2])
@@ -222,7 +178,7 @@ while True:
         midpoint_y = (index_finger_joint[1] + middle_finger_joint[1]) // 2
         cv2.circle(img, (midpoint_x, midpoint_y), 6, (255, 255, 0), cv2.FILLED)
 
-        # 16-12중앙점과 1번 랜드마크 연결
+        #16-12중앙점과 1번 랜드마크 연결
         index_finger_tip = (lmList[1][1], lmList[1][2])
         index_finger_midpoint = (midpoint_x, midpoint_y)
         cv2.line(img, index_finger_tip, index_finger_midpoint, (255, 255, 0), 2)
@@ -247,7 +203,8 @@ while True:
         if lmList:
             camera_hand_distance = calculate_camera_hand_distance(lmList)
 
-            # 거리에 따라 색상 및 메시지 변경함
+            
+           # 거리에 따라 색상 및 메시지 변경함
             if camera_hand_distance:
                 if camera_hand_distance < 0.4:  # 60cm
                     color = (0, 0, 255)  # 빨간색
@@ -262,24 +219,14 @@ while True:
                     message = "excellent : {:.2f}m.".format(camera_hand_distance)
         else:
             message = ""
-
-        # 코 위치 표시
-        cv2.circle(img, (50, 50), 5, (0, 255, 255), cv2.FILLED)
-        cv2.putText(img, "Nose", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
-
-        # 키보드 위치 표시
-        draw_keyboard(img)
-
-        # 손가락 길이와 키보드 거리를 비교하여 키보드를 누를지 결정
-        if index_thumb_length >= 3 and camera_hand_distance is not None:
-            if camera_hand_distance <= 0.4:
-                pyautogui.press('space')
-
-        # 거리 메시지 출력
+            
+            
+       
+        
         cv2.putText(
             img,
             message,
-            (50, 100),
+            (50, 50),
             cv2.FONT_HERSHEY_SIMPLEX,
             1,
             color,
@@ -287,19 +234,4 @@ while True:
         )
 
     cv2.imshow("Hand Tracking", img)
-    
-    # 마우스 이벤트 처리
-    def click_event(event, x, y, flags, param):
-        global keyboard_displayed
-        if event == cv2.EVENT_LBUTTONDOWN:
-            # x, y 좌표를 확인하여 키보드가 입력창 또는 검색창에 클릭한 것으로 간주
-            if 80 <= x <= 520 and 300 <= y <= 420:
-                keyboard_displayed = True
-                draw_keyboard(img, show=True)
-            else:
-                keyboard_displayed = False
-                draw_keyboard(img, show=False)
-
-    cv2.setMouseCallback("Hand Tracking", click_event)
-    
     cv2.waitKey(1)
