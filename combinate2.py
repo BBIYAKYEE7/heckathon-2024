@@ -22,6 +22,10 @@ baseline_set = False
 initial_baseline_length = None
 initial_baseline_set = False
 
+initial_face_center = None
+
+
+
 keyboard = [
     ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
     ["A", "S", "D", "F", "G", "H", "J", "K", "L", ";"],
@@ -168,13 +172,30 @@ def display_length(img, length, position):
     cv2.putText(img, f"Length: {int(length)}", position, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
 
 def calculate_camera_hand_distance(lmList):
-    if len(lmList) >= 21:
-        thumb_tip = lmList[4]
-        index_finger_tip = lmList[8]
-        distance = math.sqrt((thumb_tip[1] - index_finger_tip[1])**2 + (thumb_tip[2] - index_finger_tip[2])**2)
+    if len(lmList) > 0:
+        x_min, y_min = lmList[0][1], lmList[0][2]
+        x_max, y_max = lmList[0][1], lmList[0][2]
+
+        for lm in lmList:
+            x, y = lm[1], lm[2]
+            if x < x_min:
+                x_min = x
+            elif x > x_max:
+                x_max = x
+            if y < y_min:
+                y_min = y
+            elif y > y_max:
+                y_max = y
+
+        bbox_width = x_max - x_min
+        bbox_height = y_max - y_min
+
+        distance = 100 / max(bbox_width, bbox_height)  # 거리 100 최대로.
+
         return distance
     else:
         return None
+
     
 move_threshold = 10
 
@@ -188,6 +209,18 @@ def find_nose_center(face_landmarks):
     nose_center_x = int(x_sum / num_landmarks * img.shape[1])
     nose_center_y = int(y_sum / num_landmarks * img.shape[0])
     return nose_center_x, nose_center_y
+
+def find_face_center(face_landmarks):
+    x_sum = 0
+    y_sum = 0
+    for landmark in face_landmarks.landmark:
+        x_sum += landmark.x
+        y_sum += landmark.y
+    num_landmarks = len(face_landmarks.landmark)
+    face_center_x = int(x_sum / num_landmarks * img.shape[1])
+    face_center_y = int(y_sum / num_landmarks * img.shape[0])
+    return face_center_x, face_center_y
+
 
 
 cap = cv2.VideoCapture(0)
@@ -284,7 +317,9 @@ while True:
     # 얼굴 메시 처리
     rgb_frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     results = face_mesh.process(rgb_frame)
-    
+
+    face_center = None  # 얼굴 중심 초기화
+
     nose_center = None
     prev_nose_center = None
 
@@ -297,21 +332,80 @@ while True:
             y_max = max(int(coord.y * img.shape[0]) for coord in face_landmarks.landmark)
             cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
             
+            face_center = find_face_center(face_landmarks)  # 얼굴 중심 저장
             nose_center = find_nose_center(face_landmarks)
-            
-    if prev_nose_center is not None and nose_center is not None:
-        distance = calculate_distance(prev_nose_center, nose_center)
-        if distance > move_threshold:
-            nose_center = prev_nose_center        
+
+    
 
     if nose_center is not None:
-        horizon_y = nose_center[1] - 10
-        cv2.line(img, (0, horizon_y), (img.shape[1], horizon_y), (0, 225, 255), 2)
-        if horizon_y > 0:  # 코의 위치가 수평선 아래에 있으면
-            pyautogui.scroll(-scroll_speed)  # 위로 스크롤
-        elif horizon_y < 0:
-            pyautogui.scroll(scroll_speed)  # 아래로 스크롤
+        face_center_x, face_center_y = find_face_center(face_landmarks)
 
+        if face_center_x is not None and face_center_y is not None:  # 얼굴 중심의 좌표가 정의되었는지 확인
+            # 초기에 얼굴이 감지된 경우를 위한 변수
+            if initial_face_center is None:
+                initial_face_center = (face_center_x, face_center_y)
+
+            # 얼굴의 중심 위치와 초기 위치의 차이 계산
+            if initial_face_center is not None:
+                face_movement = calculate_distance(initial_face_center, (face_center_x, face_center_y))
+
+                if prev_nose_center is not None and nose_center is not None:
+                    distance = calculate_distance(prev_nose_center, nose_center)
+                    if distance > move_threshold:
+                        nose_center = prev_nose_center
+##이 부분부터 
+            if nose_center is not None:
+                horizon_y = nose_center[1] - 10 # 코의 위치에서 10 픽셀 위로 수평선 설정
+                cv2.line(img, (0, horizon_y), (img.shape[1], horizon_y), (0, 225, 255), 2)
+                if horizon_y > 0:  # 코의 위치가 수평선 아래에 있으면
+                    pyautogui.scroll(-scroll_speed)  # 위로 스크롤
+                elif horizon_y < 0:
+                    pyautogui.scroll(scroll_speed)  # 아래로 스크롤
+#여기 코드 다시 짜야함 아래 스크롤이 안먹힘. 
+
+
+
+            
+    if results.multi_face_landmarks:
+        left_face_center = None
+        right_face_center = None
+        
+        left_cheek_color = (0, 0, 255)  # 빨간색
+        right_cheek_color = (255, 0, 0)  # 파란색
+
+        
+        if results.multi_face_landmarks:
+            
+            for face_landmarks in results.multi_face_landmarks:
+                face_center = find_face_center(face_landmarks)
+                if face_center[0] < img.shape[1] // 2:
+                    left_face_center = face_center
+                else:
+                    right_face_center = face_center
+
+            
+            for face_landmarks in results.multi_face_landmarks:
+                x_min = min(int(coord.x * img.shape[1]) for coord in face_landmarks.landmark)
+                x_max = max(int(coord.x * img.shape[1]) for coord in face_landmarks.landmark)
+                y_min = min(int(coord.y * img.shape[0]) for coord in face_landmarks.landmark)
+                y_max = max(int(coord.y * img.shape[0]) for coord in face_landmarks.landmark)
+                
+                nose_x, _ = find_nose_center(face_landmarks)
+
+                # 얼굴의 왼쪽 볼을 빨간색 원형으로 표시
+                left_cheek_center = ((x_min + nose_x) // 2, (y_min + y_max) // 2)
+                left_cheek_radius = min((nose_x - x_min) // 2, (y_max - y_min) // 2)
+                cv2.circle(img, (int(left_cheek_center[0]), int(left_cheek_center[1])), int(left_cheek_radius), left_cheek_color, 2)
+
+                # 얼굴의 오른쪽 볼을 파란색 원형으로 표시
+                right_cheek_center = ((nose_x + x_max) // 2, (y_min + y_max) // 2)
+                right_cheek_radius = min((x_max - nose_x) // 2, (y_max - y_min) // 2)
+                cv2.circle(img, (int(right_cheek_center[0]), int(right_cheek_center[1])), int(right_cheek_radius), right_cheek_color, 2)
+
+                # 원 중심에서 수평선 그리기
+                cv2.line(img, (int(left_cheek_center[0] - left_cheek_radius), int(left_cheek_center[1])),
+                        (int(right_cheek_center[0] + right_cheek_radius), int(right_cheek_center[1])),
+                        (0, 255, 255), 2)
   
     # 화면 표시
     cv2.imshow("Hand Tracking", img)
