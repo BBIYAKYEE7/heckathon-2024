@@ -106,7 +106,7 @@ function App() {
             transition: 'opacity 0.5s, transform 0.5s' 
           }}>Visionize</p>
           <p style={{ fontSize: '2rem', fontWeight: '500', position: 'sticky', top: '45%', opacity: scrollPosition > 410 && scrollPosition < 610 ? 1 : 0, transition: 'opacity 0.5s' }}>다른 세상을 만나보세요</p>
-          <p style={{ fontSize: '2rem', fontWeight: '500', position: 'sticky', top: '45%', opacity: scrollPosition > 650 && scrollPosition < 820 ? 1 : 0, transition: 'opacity 0.5s' }}>CRAFTER가 야심차게 준비한 새로운 AR의 기준</p>
+          <p style={{ fontSize: '1rem', fontWeight: '500', position: 'sticky', top: '45%', opacity: scrollPosition > 650 && scrollPosition < 820 ? 1 : 0, transition: 'opacity 0.5s' }}>CRAFTER가 야심차게 준비한 새로운 AR의 기준</p>
           <div ref={modelContainer} style={{ position: 'sticky', top: '50%', opacity: scrollPosition > 850 && scrollPosition < 1050 ? 1 : 0, transition: 'opacity 0.5s' }}></div>
         </div>
       </header>
