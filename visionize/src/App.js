@@ -101,7 +101,8 @@ function App() {
           transform: 'translate(-50%, -50%)',
           animation: 'bounce 2s infinite',
           fontSize: '10vim',
-          fontWeight: '500'
+          fontWeight: '500',
+          width: 'auto',
         }}>
           Scroll Slowly for More Information
         </p>
