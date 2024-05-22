@@ -104,7 +104,7 @@ function App() {
           fontWeight: '500',
           width: 'auto',
         }}>
-          Scroll Slowly for More Information
+          2024.05.24. Comming Soon.
         </p>
         <div style={{ height: '5000px' }}>
           <p style={{
