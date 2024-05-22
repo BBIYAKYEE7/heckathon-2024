@@ -47,9 +47,8 @@ function App() {
       modelContainer.current.appendChild(renderer.domElement);
 
       const loader = new GLTFLoader();
-      loader.load('goggles.glb', function (gltf) {
+      loader.load('./goggles.glb', function (gltf) {
         model = gltf.scene;
-        scene.add(model);
         animate();
       }, undefined, function (error) {
         console.error(error);
@@ -83,10 +82,10 @@ function App() {
   return (
     <div className="App" style={{ backgroundColor: bgColor }}>
       <header className="App-header">
-        <img 
-          src={Logo} 
-          className="App-logo" 
-          alt="logo" 
+        <img
+          src={Logo}
+          className="App-logo"
+          alt="logo"
           style={{
             position: 'absolute',
             top: '50%',
@@ -95,15 +94,26 @@ function App() {
             opacity: opacity
           }}
         />
-        <div style={{ height: '2000px' }}>
-          <p style={{ 
+        <p style={{
+          color: '#000',
+          position: 'fixed',
+          top: 'calc(50% + 100px)', // 로고의 높이의 절반(50%) + 로고의 높이의 절반(50%) + 여백(50px)
+          transform: 'translate(-50%, -50%)',
+          animation: 'bounce 2s infinite',
+          fontSize: '10vim',
+          fontWeight: '500'
+        }}>
+          Scroll Slowly for More Information
+        </p>
+        <div style={{ height: '5000px' }}>
+          <p style={{
             fontWeight: '600',
             fontSize: '3rem',
-            position: 'sticky', 
-            top: '40%', 
-            opacity: scrollPosition > 100 && scrollPosition < 400 ? 1 : 0, 
-            transform: scrollPosition > 100 && scrollPosition < 400 ? 'translateY(0)' : 'translateY(100px)', 
-            transition: 'opacity 0.5s, transform 0.5s' 
+            position: 'sticky',
+            top: '45%',
+            opacity: scrollPosition > 100 && scrollPosition < 400 ? 1 : 0,
+            transform: scrollPosition > 100 && scrollPosition < 400 ? 'translateY(0)' : 'translateY(100px)',
+            transition: 'opacity 0.5s, transform 0.5s'
           }}>Visionize</p>
           <p style={{ fontSize: '2rem', fontWeight: '500', position: 'sticky', top: '45%', opacity: scrollPosition > 410 && scrollPosition < 610 ? 1 : 0, transition: 'opacity 0.5s' }}>다른 세상을 만나보세요</p>
           <p style={{ fontSize: '10vim', fontWeight: '500', position: 'sticky', top: '45%', opacity: scrollPosition > 650 && scrollPosition < 820 ? 1 : 0, transition: 'opacity 0.5s' }}>CRAFTER가 야심차게 준비한 새로운 AR의 기준</p>
