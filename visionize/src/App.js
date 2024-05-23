@@ -1,6 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import Logo from './logo.svg';
 import './App.css';
 
@@ -34,49 +32,6 @@ function App() {
 
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
-  }, [scrollPosition]);
-
-  useEffect(() => {
-    let scene, camera, renderer, model;
-
-    const init = () => {
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      renderer = new THREE.WebGLRenderer({ alpha: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      modelContainer.current.appendChild(renderer.domElement);
-
-      const loader = new GLTFLoader();
-      loader.load('./goggles.glb', function (gltf) {
-        model = gltf.scene;
-        animate();
-      }, undefined, function (error) {
-        console.error(error);
-      });
-
-      camera.position.z = 5;
-    };
-
-    const animate = () => {
-      requestAnimationFrame(animate);
-      if (model) {
-        if (scrollPosition > 850 && scrollPosition < 1050) {
-          model.rotation.y = (scrollPosition - 850) * 0.01;
-        }
-        if (model.rotation.y > Math.PI / 2) {
-          model.rotation.y = Math.PI / 2;
-        }
-      }
-      renderer.render(scene, camera);
-    };
-
-    init();
-
-    return () => {
-      if (modelContainer.current) {
-        modelContainer.current.removeChild(renderer.domElement);
-      }
-    };
   }, [scrollPosition]);
 
   return (
