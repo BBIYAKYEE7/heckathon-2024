@@ -89,7 +89,7 @@ function App() {
           <p style={{ fontSize: '16vim', fontWeight: '500', position: 'sticky', top: '50%', opacity: scrollPosition > 3600 && scrollPosition < 4000 ? 1 : 0, transition: 'opacity 0.5s' }}>WeMos ESP8266 그리고</p>
           <p style={{
             fontWeight: '600',
-            fontSize: '2rem',
+            fontSize: '16vim',
             position: 'sticky',
             top: '50%',
             opacity: scrollPosition > 4100 && scrollPosition < 4500 ? 1 : 0,
