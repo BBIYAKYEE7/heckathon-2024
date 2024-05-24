@@ -61,7 +61,7 @@ function App() {
         }}>
           2024.05.24. Comming Soon.
         </p>
-        <div style={{ height: '5000px' }}>
+        <div style={{ height: '10000px' }}>
           <p style={{
             fontWeight: '600',
             fontSize: '3rem',
@@ -86,7 +86,16 @@ function App() {
           <p style={{ fontSize: '16vim', fontWeight: '500', position: 'sticky', top: '50%', opacity: scrollPosition > 1580 && scrollPosition < 2080 ? 1 : 0, transition: 'opacity 0.5s' }}>세계최초 OCR과 그림판이 존재하는 마우스</p>
           <p style={{ fontSize: '16vim', fontWeight: '500', position: 'sticky', top: '50%', opacity: scrollPosition > 2180 && scrollPosition < 2580 ? 1 : 0, transition: 'opacity 0.5s' }}>2개의 획기적인 칩 탑제.</p>
           <img src={Image} alt="image" style={{width: '30%', height: 'auto', position: 'sticky', top: '20%', opacity: scrollPosition > 2680 && scrollPosition < 3500 ? 1 : 0, transform: scrollPosition > 2680 && scrollPosition < 3500 ? 'translateY(0)' : 'translateY(100px)', transition: 'opacity 0.5s, transform 0.5s'}}/>
-          <p style={{ fontSize: '16vim', fontWeight: '500', position: 'sticky', top: '50%', opacity: scrollPosition > 3600 && scrollPosition < 4000 ? 1 : 0, transition: 'opacity 0.5s' }}>WeMos ESP8266</p>
+          <p style={{ fontSize: '16vim', fontWeight: '500', position: 'sticky', top: '50%', opacity: scrollPosition > 3600 && scrollPosition < 4000 ? 1 : 0, transition: 'opacity 0.5s' }}>WeMos ESP8266 그리고</p>
+          <p style={{
+            fontWeight: '600',
+            fontSize: '3rem',
+            position: 'sticky',
+            top: '45%',
+            opacity: scrollPosition > 4100 && scrollPosition < 4500 ? 1 : 0,
+            transform: scrollPosition > 4100 && scrollPosition < 4500 ? 'translateY(0)' : 'translateY(100px)',
+            transition: 'opacity 0.5s, transform 0.5s'
+          }}>ESP32로 종이에 그려 인식하는 그림판 까지.</p>
         </div>
       </header>
     </div>
